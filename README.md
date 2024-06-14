@@ -1,3 +1,83 @@
+SETUP EKS CLUSTER
+__________________________________________________________________________________________________
+# install awscli
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+# install unzip software
+apt install unzip
+
+# Unzip the Installer
+unzip awscliv2.zip
+
+# Run the Installer
+sudo ./aws/install
+
+# Verify the Installation:
+aws --version
+
+#create access key and secreat keys
+
+# configure the AWS Command Line Interface & establish connection vm to aws
+aws configure
+
+# Ensure curl and tar are Installed
+sudo apt update
+sudo apt install curl tar -y
+
+# Download the Correct eksctl File
+curl -LO "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz"
+
+# Extract the tar.gz File
+tar -xzf eksctl_Linux_amd64.tar.gz
+
+# Move eksctl to /usr/local/bin
+sudo mv eksctl /usr/local/bin/
+
+# Verify the Installation
+eksctl version
+
+# Install using Fargate
+eksctl create cluster \
+  --name demo-sagar \
+  --region us-east-1 \
+  --zones us-east-1a,us-east-1b,us-east-1c \
+  --nodegroup-name demo-nodes \
+  --node-type t3.medium \
+  --nodes 3 \
+  --nodes-min 1 \
+  --nodes-max 4 \
+  --managed
+
+______________________________________________________________________________________________
+eksctl delete cluster --name demo-cluster-three-tier-1 --region us-east-2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Three Tier Architecture Deployment on AWS EKS
 
 Stan's Robot Shop is a sample microservice application you can use as a sandbox to test and learn containerised application orchestration and monitoring techniques. It is not intended to be a comprehensive reference example of how to write a microservices application, although you will better understand some of those concepts by playing with Stan's Robot Shop. To be clear, the error handling is patchy and there is not any security built into the application.
