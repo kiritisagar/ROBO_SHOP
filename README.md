@@ -1,4 +1,4 @@
-SETUP EKS CLUSTER
+# STEP1:SETUP EKS CLUSTER
 __________________________________________________________________________________________________
 # install awscli
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -49,34 +49,87 @@ eksctl create cluster \
   --managed
 
 ______________________________________________________________________________________________
-eksctl delete cluster --name demo-cluster-three-tier-1 --region us-east-2
+eksctl create cluster --name demo-cluster-three-tier-1 --region us-east-1
+eksctl delete cluster --name demo-cluster-three-tier-1 --region us-east-1
+_________________________________________________________________________________________________
+
+# commands to configure IAM OIDC provider
+export cluster_name=<CLUSTER-NAME>
+oidc_id=$(aws eks describe-cluster --name $cluster_name --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5) 
+
+# Check if there is an IAM OIDC provider configured already
+aws iam list-open-id-connect-providers | grep $oidc_id | cut -d "/" -f4
+
+# If not, run the below command
+eksctl utils associate-iam-oidc-provider --cluster $cluster_name --approve
+
+____________________________________________________________________________________________________
+# How to setup alb add on
+# Download IAM policy
+
+curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.5.4/docs/install/iam_policy.json
+
+# Create IAM Policy
+aws iam create-policy \
+    --policy-name AWSLoadBalancerControllerIAMPolicy \
+    --policy-document file://iam_policy.json
+
+# Create IAM Role
+eksctl create iamserviceaccount \
+  --cluster=demo-cluster-three-tier-2 \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --role-name AmazonEKSLoadBalancerControllerRole \
+  --attach-policy-arn=arn:aws:iam::730335535801:policy/AWSLoadBalancerControllerIAMPolicy \
+  --approve
+
+# Deploy ALB controller
+
+# install helm
+snap install helm --classic
+
+# Add helm repo
+helm repo add eks https://aws.github.io/eks-charts
+
+# Install
+
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \            
+  -n kube-system \
+  --set clusterName=<your-cluster-name> \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=<region> \
+  --set vpcId=<your-vpc-id>
+
+# Verify that the deployments are running
+kubectl get deployment -n kube-system aws-load-balancer-controller
+
+# EBS CSI Plugin configuration
+eksctl create iamserviceaccount \
+    --name ebs-csi-controller-sa \
+    --namespace kube-system \
+    --cluster <YOUR-CLUSTER-NAME> \
+    --role-name AmazonEKS_EBS_CSI_DriverRole \
+    --role-only \
+    --attach-policy-arn arn:aws:iam:<Account ID:>:aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+    --approve
+# Run the following command. Replace with the name of your cluster, with your account ID.
+eksctl create addon --name aws-ebs-csi-driver --cluster <YOUR-CLUSTER-NAME> --service-account-role-arn arn:aws:iam::<AWS-ACCOUNT-ID>:role/AmazonEKS_EBS_CSI_DriverRole --force
+
+# Helm v3.x
+snap install kubectl --classic
+$ kubectl create ns robot-shop
+$ helm install robot-shop --namespace robot-shop .
+
+# goto repo
+cd EKS/helm
+
+kubectl apply -f ingress.yaml
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+_________________________________________________________________________________________________________________________
+_________________________________________________________________________________________________________________________
 
 # Three Tier Architecture Deployment on AWS EKS
 
